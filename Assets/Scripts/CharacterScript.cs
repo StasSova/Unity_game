@@ -12,7 +12,7 @@ public class CharacterScript : MonoBehaviour
 
     [SerializeField]
     private float moveSpeed = 1.0f;
-    private float jumpHeight = 1.0f;
+    private float jumpHeight = 2.0f;
     private float gravityValue = -9.81f;
     private bool groundedPlayer;
     private Vector3 playerVelocity;
@@ -30,11 +30,15 @@ public class CharacterScript : MonoBehaviour
 
     void Update()
     {
-        MoveState moveState = MoveState.Idle;
+        MoveState moveState = (MoveState) animator.GetInteger("MoveState");
         groundedPlayer = characterController.isGrounded;
         if (groundedPlayer && playerVelocity.y < 0)
         {
             playerVelocity.y = 0f;
+            if (moveState == MoveState.Jumping)
+            {
+                moveState = MoveState.JumpFinish;
+            }
         }
 
         Vector2 moveValue = moveAction.ReadValue<Vector2>();
@@ -51,13 +55,21 @@ public class CharacterScript : MonoBehaviour
             moveValue.x * Camera.main.transform.right + 
             moveValue.y * moveForward
         );
-
-        if (moveStep.magnitude != 0) 
+        if (moveState != MoveState.JumpStart && 
+            moveState != MoveState.Jumping   && 
+            moveState != MoveState.JumpFinish)
         {
-            this.transform.forward = moveForward;
-            moveState = Mathf.Abs(moveValue.x) > Mathf.Abs(moveValue.y)
-                ? (sprintValue > 0 ? MoveState.Run : MoveState.Sidewalk)
-                : (sprintValue > 0 ? MoveState.Run : MoveState.Walk);
+            if (moveStep.magnitude != 0)
+            {
+                this.transform.forward = moveForward;
+                moveState = Mathf.Abs(moveValue.x) > Mathf.Abs(moveValue.y)
+                    ? (sprintValue > 0 ? MoveState.SideRun : MoveState.SideWalk)
+                    : (sprintValue > 0 ? MoveState.Run : MoveState.Walk);
+            }
+            else
+            {
+                moveState = MoveState.Idle;
+            }
         }
         characterController.Move(moveStep);
         
@@ -66,23 +78,37 @@ public class CharacterScript : MonoBehaviour
         if (jumpAction.ReadValue<float>() > 0f && groundedPlayer)
         {
             playerVelocity.y += Mathf.Sqrt(jumpHeight * -2.0f * gravityValue);
+            moveState = MoveState.JumpStart;
         }
 
         playerVelocity.y += gravityValue * Time.deltaTime;
         characterController.Move(playerVelocity * Time.deltaTime);
-
         if(moveState != prevMoveState)
         {
             animator.SetInteger("MoveState", (int)moveState);
             prevMoveState = moveState;
         }
     }
+
+    private void OnJumpStartAnimationEnds()
+    {
+        animator.SetInteger("MoveState", (int)MoveState.Jumping);
+    }
+
+    private void OnJumpFinishAnimationEnds()
+    {
+        animator.SetInteger("MoveState", (int)MoveState.Idle);
+    }
 }
 
 enum MoveState
 {
-    Idle = 1,
-    Walk = 2, 
-    Sidewalk = 3,
-    Run = 4,
+    Idle       = 1,
+    Walk       = 2, 
+    SideWalk   = 3,
+    Run        = 4,
+    SideRun    = 5,
+    JumpStart  = 6,
+    Jumping    = 7,
+    JumpFinish = 8,
 }
