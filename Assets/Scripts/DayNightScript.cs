@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class DayNightScript : MonoBehaviour
 {
-    private float dayDuration = 10f;
+    private float dayDuration = 1000.0f;
     private float dayTime;
     private float rotationAngle;
     private float dawnTime  = 4.0f;
@@ -41,6 +41,7 @@ public class DayNightScript : MonoBehaviour
         {
             dayTime -= 24f;
         }
+        GameState.gameTime24 = dayTime;
 
         float coef;
         if (dayTime >= dawnTime && dayTime < nightTime)

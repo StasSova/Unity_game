@@ -31,12 +31,6 @@ public class GameController : MonoBehaviour
 
         if (payload.Equals("Destroy"))
         {
-            var coin = GameObject.Instantiate(coinPrefab);
-
-
-
-
-
             /* Умови створення нової 
             - не ближче за 10 (minCoinCharacterDistance) від персонажу
             - не далі за 30 (maxCoinCharacterDistance) від персонажу
@@ -47,6 +41,7 @@ public class GameController : MonoBehaviour
             */
 
             Vector3 coinDelta;
+            Vector3 newPosition;
             int cnt = 0;
             do
             {
@@ -55,19 +50,26 @@ public class GameController : MonoBehaviour
                 0,
                 Random.Range(-maxCoinCharacterDistance, maxCoinCharacterDistance)
                 );
+                newPosition = character.transform.position + coinDelta;
                 cnt += 1;
             }
             while (cnt < 100 && (
                 coinDelta.magnitude < minCoinCharacterDistance ||
-                coinDelta.magnitude > maxCoinCharacterDistance
+                coinDelta.magnitude > maxCoinCharacterDistance ||
+                newPosition.x < spawnOffset ||
+                newPosition.z < spawnOffset ||
+                newPosition.x > 1000 - spawnOffset ||
+                newPosition.z > 1000 - spawnOffset
             ));
-            Vector3 newPosition = character.transform.position + coinDelta;
+             
             float terrainHeight = Terrain.activeTerrain.SampleHeight(newPosition);
             newPosition.y = terrainHeight + Random.Range(-minCoinSpawnHeight, maxCoinSpawnHeight);
-            
+
+            var coin = GameObject.Instantiate(coinPrefab);
             coin.transform.position = newPosition;
+            GameEventSystem.EmitEvent("CoinSpawn", coin);
         }
-        Debug.Log($"Event: {type}, payload: {payload}");
+        //Debug.Log($"Event: {type}, payload: {payload}");
     }
 
 
