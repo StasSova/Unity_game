@@ -18,7 +18,8 @@ public class CoinScript : MonoBehaviour
 
     public void OnAnimationEnd()
     {
-        GameEventSystem.EmitEvent("Coin", "Destroy");
+        GameEventSystem.EmitEvent("CoinDestroying", gameObject);
         Destroy(gameObject);
+        GameEventSystem.EmitEvent("Coin", "Destroy");
     }
 }
