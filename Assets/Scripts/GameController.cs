@@ -8,26 +8,45 @@ public class GameController : MonoBehaviour
     [SerializeField]
     private GameObject character;
 
-    private float minCoinCharacterDistance = 10.0f;
-    private float maxCoinCharacterDistance = 30.0f;
+    private float minCoinCharacterDistance;
+    private float maxCoinCharacterDistance;
     private float spawnOffset = 50.0f;
     private float minCoinSpawnHeight = 0.8f;
     private float maxCoinSpawnHeight = 4.0f;
+    private string[] listenableEvents = { "Coin", nameof(GameState) };
 
     void Start()
     {
-        GameEventSystem.AddListener(OnCoinEvent, "Coin");
+        GameEventSystem.AddListener(OnGameEvent, listenableEvents);
+        OnGameEvent(nameof(GameState), null);
     }
 
-    private void OnCoinEvent(string type, object payload)
+    private void OnGameEvent(string type, object payload)
     {
-        if (payload.Equals("Destroy"))
+        switch (type)
         {
-            SpawnCoin();
-            SpawnCoin();
+            case "Coin":
+                if (payload.Equals("Destroy"))
+                {
+                    int coinsLimit = 1 + (int) (GameState.coinSpawnProbability * GameState.coinSpawnProbabilityFactor);
+                    if (GameObject.FindGameObjectsWithTag("Coin").Length <= coinsLimit)
+                    {
+                        SpawnCoin();
+                    }
+                    for(int i = 0; i <= coinsLimit; i++)
+                    {
+                        if (Random.value < 1.0f / (coinsLimit + 1)) SpawnCoin();
+                    }
+                }
+                break;
+            case nameof(GameState):
+                minCoinCharacterDistance = GameState.coinSpawnRadius;
+                maxCoinCharacterDistance = GameState.coinSpawnRadius + GameState.coinSpawnZoneRatio;
+                Debug.Log(GameState.coinSpawnRadius);
+                break;
         }
-        //Debug.Log($"Event: {type}, payload: {payload}");
     }
+
 
     private void SpawnCoin()
     {
@@ -72,6 +91,6 @@ public class GameController : MonoBehaviour
 
     private void OnDestroy()
     {
-        GameEventSystem.RemoveListener(OnCoinEvent, "Coin");
+        GameEventSystem.RemoveListener(OnGameEvent, listenableEvents);
     }
 }

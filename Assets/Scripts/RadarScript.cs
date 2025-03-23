@@ -15,8 +15,9 @@ public class RadarScript : MonoBehaviour
 
     [SerializeField]
     private float activeScreenRadiusRatio = 0.8f;
-    [SerializeField]
-    private float maxRadarDistance = 30f;
+
+    private float maxRadarDistance = 70f;
+    private string[] listenableEvents = { "CoinSpawn", "CoinDestroying", nameof(GameState) };
 
     void Start()
     {
@@ -26,15 +27,18 @@ public class RadarScript : MonoBehaviour
         samplePoint = transform.Find("Screen/Point").gameObject.GetComponent<Image>();
         samplePoint.gameObject.SetActive(false);
 
-        GameEventSystem.AddListener(OnCoinSpawnEvent, "CoinSpawn");
-        GameEventSystem.AddListener(OnCoinEvent, "CoinDestroying");
+        foreach (var c in GameObject.FindGameObjectsWithTag("Coin"))
+        {
+            var point2 = GameObject.Instantiate(samplePoint);
+            point2.transform.parent = screen.gameObject.transform;
+            point2.rectTransform.localPosition = new Vector3(50, 50);
+            point2.gameObject.SetActive(true);
 
-        var point2 = GameObject.Instantiate(samplePoint);
-        point2.transform.parent = screen.gameObject.transform;
-        point2.rectTransform.localPosition = new Vector3(50, 50);
-        point2.gameObject.SetActive(true);
+            points.Add(new() { coin = c.transform, point = point2 });
+        }
 
-        points.Add(new() { coin = coin, point = point2 });
+        GameEventSystem.AddListener(OnGameEvent, listenableEvents);
+        OnGameEvent(nameof(GameState), null);
     }
 
     private void Update()
@@ -102,10 +106,24 @@ public class RadarScript : MonoBehaviour
         }
     }
 
+    private void OnGameEvent(string type, object payload)
+    {
+        switch (type)
+        {
+            case "CoinDestroying": OnCoinEvent(type, payload); break;
+            case "CoinSpawn": OnCoinSpawnEvent(type, payload); break;
+            case nameof(GameState):
+                if (payload == null || nameof(GameState.isRadarVisible).Equals(payload))
+                {
+                    screen.gameObject.SetActive(GameState.isRadarVisible);
+                }
+                break;
+        }
+    }
+
     private void OnDestroy()
     {
-        GameEventSystem.RemoveListener(OnCoinSpawnEvent, "CoinSpawn");
-        GameEventSystem.RemoveListener(OnCoinEvent, "CoinDestroying");
+        GameEventSystem.RemoveListener(OnGameEvent, listenableEvents);
     }
 
     private class RadarPoint

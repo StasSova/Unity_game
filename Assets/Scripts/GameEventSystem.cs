@@ -3,7 +3,9 @@ using System.Collections.Generic;
 
 public class GameEventSystem
 {
+    public static readonly string broadcastEventName = "broadcastEventName";
     private static readonly Dictionary<string, List<Action<string, object>>> listeners = new();
+    private static readonly string[] broadcastEventNames = {broadcastEventName};
 
     public static void EmitEvent(string type, object payload)
     {
@@ -14,22 +16,45 @@ public class GameEventSystem
                 action(type, payload);
             }
         }
-    }
-
-    public static void AddListener(Action<string, object> listener, string type)
-    {
-        if (!listeners.ContainsKey(type))
+        if (listeners.ContainsKey(broadcastEventName))
         {
-            listeners[type] = new();
+            foreach (var action in listeners[broadcastEventName])
+            {
+                action(type, payload);
+            }
         }
-        listeners[type].Add(listener);
     }
 
-    public static void RemoveListener(Action<string, object> listener, string type)
+    public static void AddListener(Action<string, object> listener, params string[] types)
     {
-        if (listeners.ContainsKey(type))
+        if (types.Length == 0)
         {
-            listeners[type].Remove(listener);
+            types = broadcastEventNames;
+        }
+
+        foreach (string type in types)
+        {
+            if (!listeners.ContainsKey(type))
+            {
+                listeners[type] = new();
+            }
+            listeners[type].Add(listener);
+        }
+    }
+
+    public static void RemoveListener(Action<string, object> listener, params string[] types)
+    {
+        if (types.Length == 0)
+        {
+            types = broadcastEventNames;
+        }
+
+        foreach (string type in types)
+        {
+            if (listeners.ContainsKey(type))
+            {
+                listeners[type].Remove(listener);
+            }
         }
     }
 }
